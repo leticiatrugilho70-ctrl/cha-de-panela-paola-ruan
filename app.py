@@ -13,6 +13,14 @@ ALLOWED={'.png','.jpg','.jpeg','.webp','.gif'}
 app=Flask(__name__)
 app.config['MAX_CONTENT_LENGTH']=8*1024*1024
 
+@app.before_request
+def protect_admin():
+    if request.path.startswith('/admin'):
+        admin_password = os.environ.get('ADMIN_PASSWORD')
+        auth = request.authorization
+        if not admin_password or not auth or auth.username != 'admin' or auth.password != admin_password:
+            return ('Acesso restrito', 401, {'WWW-Authenticate': 'Basic realm="Painel administrativo"'})
+
 def conn():
     c=sqlite3.connect(DB,timeout=10); c.row_factory=sqlite3.Row; return c
 
