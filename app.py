@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from openpyxl import Workbook
 
 BASE=Path(__file__).resolve().parent
-DB=BASE/'presentes.db'
+DB=Path(os.environ.get('DB_PATH', str(BASE/'presentes.db')))
 IMG=BASE/'images'
 EXPORT=BASE/'escolhas.xlsx'
 ALLOWED={'.png','.jpg','.jpeg','.webp','.gif'}
