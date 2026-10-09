@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from openpyxl import Workbook
+from supabase import create_client
 
 BASE = Path(__file__).resolve().parent
 IMG = BASE / 'images'
@@ -332,23 +333,35 @@ def reserve(gift_id):
         c.close()
 
 
+
 def save_upload(file):
     if not file or not file.filename:
         return None
 
-    ext = Path(
-        secure_filename(file.filename)
-    ).suffix.lower()
+    ext = Path(secure_filename(file.filename)).suffix.lower()
 
     if ext not in ALLOWED:
-        raise ValueError(
-            'Formato de imagem não permitido.'
-        )
+        raise ValueError('Formato de imagem não permitido.')
 
     name = f'gift-{uuid.uuid4().hex}{ext}'
-    file.save(IMG / name)
 
-    return f'images/{name}'
+    supabase = create_client(
+        os.environ['SUPABASE_URL'],
+        os.environ['SUPABASE_KEY']
+    )
+
+    file.stream.seek(0)
+    supabase.storage.from_('presentes').upload(
+        path=name,
+        file=file.stream.read(),
+        file_options={
+            'content-type': file.mimetype or 'application/octet-stream',
+            'upsert': 'false'
+        }
+    )
+
+    return supabase.storage.from_('presentes').get_public_url(name)
+
 
 
 @app.route('/admin', methods=['GET', 'POST'])
